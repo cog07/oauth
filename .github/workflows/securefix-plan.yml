@@ -1,0 +1,38 @@
+name: SecureFix Plan
+
+on:
+  workflow_dispatch:
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run normalization
+        run: |
+          python security-governance/scripts/normalize_vulnerabilities.py \
+          --reports security-governance/inputs/reports \
+          --output security-governance/outputs/issues.normalized.json
+
+      - name: Generate remediation plan
+        run: |
+          python security-governance/scripts/generate_remediation_plan.py \
+          --issues security-governance/outputs/issues.normalized.json \
+          --policy dummy \
+          --plan-md security-governance/outputs/remediation-plan.md \
+          --plan-json security-governance/outputs/remediation-plan.json \
+          --audit security-governance/outputs/audit-plan.json
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: remediation-plan
+          path: security-governance/outputs/
