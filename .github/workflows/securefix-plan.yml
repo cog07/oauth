@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   push:
     branches: [master,securefix-poc]
+  pull:
+    branches: [master,securefix-poc]
 jobs:
   plan:
     runs-on: ubuntu-latest
