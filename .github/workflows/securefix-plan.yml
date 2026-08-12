@@ -1,10 +1,8 @@
 name: SecureFix Plan
-
 on:
   workflow_dispatch:
   push:
     branches: [master,securefix-poc]
-  pull_request: [master,securefix-poc]
 jobs:
   plan:
     runs-on: ubuntu-latest
