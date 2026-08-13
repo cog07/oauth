@@ -2,7 +2,9 @@ name: SecureFix Apply Approved
 on:
   workflow_dispatch:
   push:
-    branches: [ master,securefix-poc ]
+    branches:
+      - master
+      - securefix-poc
 permissions:
   contents: write
   pull-requests: write
@@ -20,13 +22,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Show remediation plan
+      - name: Check outputs folder
         run: |
-          echo "====== Remediation Plan ======"
-          cat security-governance/outputs/remediation-plan.md
-      - name: Show generated JSON
-        run: |
-          cat security-governance/outputs/remediation-plan.json
+          ls -la security-governance/outputs || true
       - name: Show current Java version in pom
         run: |
           grep -n "java.version" pom.xml || true
@@ -36,19 +34,9 @@ jobs:
       - name: Simulate migration
         run: |
           echo "Java 11 -> Java 17 migration approved"
-          echo "Spring Boot 2.7 -> 3.x migration approved"
+          echo "Spring Boot 2.7 -> Spring Boot 3.x migration approved"
       - name: Create audit file
         run: |
           mkdir -p security-governance/outputs
           cat > security-governance/outputs/migration-audit.json << EOF
           {
-            "status":"approved",
-            "migration":"java17-springboot3",
-            "timestamp":"$(date)"
-          }
-          EOF
-      - name: Upload audit artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: migration-audit
-          path: security-governance/outputs/
