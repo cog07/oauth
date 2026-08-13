@@ -40,3 +40,13 @@ jobs:
           mkdir -p security-governance/outputs
           cat > security-governance/outputs/migration-audit.json << EOF
           {
+            "status":"approved",
+            "migration":"java17-springboot3",
+            "timestamp":"$(date)"
+          }
+          EOF
+      - name: Upload audit artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-audit
+          path: security-governance/outputs/
