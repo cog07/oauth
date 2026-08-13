@@ -1,54 +1,79 @@
 name: SecureFix Apply Approved
+
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - master
-      - securefix-poc
+
 permissions:
   contents: write
   pull-requests: write
+
 jobs:
+
   approval-gate:
     runs-on: ubuntu-latest
+
     environment:
       name: security-fix-approval
+
     steps:
       - name: Approval received
         run: echo "Migration approved"
+
   apply-migration:
     needs: approval-gate
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Check outputs folder
-        run: |
-          ls -la security-governance/outputs || true
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
       - name: Show Java Version
         run: |
           grep -n "java.version" pom.xml || true
+
       - name: Show Spring Boot Version
         run: |
-          grep -n "spring-boot-starter-parent" pom.xml || true
+          grep -A 5 -B 1 "spring-boot-starter-parent" pom.xml || true
+
       - name: Find javax imports
         run: |
           grep -R "javax\." src/main/java || true
-      - name: Simulate migration
+
+      - name: Verify Java Runtime
         run: |
-          echo "Java 11 -> Java 17 migration approved"
-          echo "Spring Boot 2.7 -> Spring Boot 3.x migration approved"
-      - name: Create audit file
+          java -version
+          mvn -version
+
+      - name: Maven Compile Validation
+        run: |
+          mvn clean compile -DskipTests
+
+      - name: Maven Test Validation
+        run: |
+          mvn test
+
+      - name: Create Migration Audit
         run: |
           mkdir -p security-governance/outputs
+
           cat > security-governance/outputs/migration-audit.json << EOF
           {
             "status":"approved",
             "migration":"java17-springboot3",
+            "java_runtime":"17",
+            "build_status":"passed",
             "timestamp":"$(date)"
           }
           EOF
-      - name: Upload audit artifact
+
+      - name: Upload Migration Audit
         uses: actions/upload-artifact@v4
         with:
           name: migration-audit
