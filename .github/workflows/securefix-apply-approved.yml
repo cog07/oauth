@@ -25,12 +25,15 @@ jobs:
       - name: Check outputs folder
         run: |
           ls -la security-governance/outputs || true
-      - name: Show current Java version in pom
+      - name: Show Java Version
         run: |
           grep -n "java.version" pom.xml || true
-      - name: Show Spring Boot version
+      - name: Show Spring Boot Version
         run: |
-          grep -n "spring-boot" pom.xml || true
+          grep -n "spring-boot-starter-parent" pom.xml || true
+      - name: Find javax imports
+        run: |
+          grep -R "javax\." src/main/java || true
       - name: Simulate migration
         run: |
           echo "Java 11 -> Java 17 migration approved"
