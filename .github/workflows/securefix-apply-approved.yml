@@ -10,7 +10,6 @@ permissions:
   pull-requests: write
 
 jobs:
-
   approval-gate:
     runs-on: ubuntu-latest
 
@@ -28,6 +27,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create output directory
         run: |
@@ -44,26 +45,17 @@ jobs:
         run: |
           grep -n "java.version" pom.xml || true
 
-      - name: Show Spring Boot parent
-        run: |
-          grep -A 5 -B 1 "spring-boot-starter-parent" pom.xml || true
-
       - name: Find javax imports
         run: |
           grep -R "javax\." src/main/java || true
 
-      - name: Update Java Version to 17
+      - name: Upgrade Java 11 to 17
         run: |
           sed -i 's/<java.version>11<\/java.version>/<java.version>17<\/java.version>/g' pom.xml
 
-      - name: Verify Java Update
+      - name: Verify Java upgrade
         run: |
           grep -n "java.version" pom.xml
-
-      - name: Verify Runtime
-        run: |
-          java -version
-          mvn -version
 
       - name: Maven Compile Validation
         run: |
@@ -73,13 +65,25 @@ jobs:
         run: |
           mvn test
 
+      - name: Commit Java 17 Upgrade
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add pom.xml
+
+          git commit -m "Upgrade Java version from 11 to 17" || true
+
+      - name: Push Changes
+        run: |
+          git push origin HEAD
+
       - name: Create Migration Audit
         run: |
           cat > security-governance/outputs/migration-audit.json << EOF
           {
             "status":"approved",
             "migration":"java11-to-java17",
-            "java_runtime":"17",
             "build_status":"passed",
             "timestamp":"$(date)"
           }
