@@ -34,6 +34,9 @@ jobs:
       - name: Run POM Analysis
         run: |
           python security-governance/scripts/analyze_pom.py
+      - name: Run Source Analysis
+        run: |
+          python security-governance/scripts/analyze_source.py
 
       - name: Upload Analysis
         uses: actions/upload-artifact@v4
