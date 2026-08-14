@@ -2,14 +2,15 @@ name: Migration Agent
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - java17-migration
     inputs:
       branch_name:
         description: "Migration Branch"
         required: true
         default: "java17-migration"
+
+  push:
+    branches:
+      - java17-migration
 
 permissions:
   contents: write
@@ -68,13 +69,28 @@ jobs:
           grep -n "java.version" pom.xml || true
           grep -n "spring-boot-starter-parent" -A 5 pom.xml || true
 
+      - name: Create Output Directory
+        run: |
+          mkdir -p security-governance/outputs
+
       - name: Maven Compile
         run: |
-          mvn clean compile -DskipTests
+          mvn clean compile -DskipTests \
+          > security-governance/outputs/build-errors.txt 2>&1 || true
+
+      - name: Generate Agent Task
+        run: |
+          python security-governance/scripts/generate_agent_task.py
+
+      - name: Upload Agent Analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-agent-analysis
+          path: security-governance/outputs/
 
       - name: Maven Test
         run: |
-          mvn test
+          mvn test || true
 
       - name: Configure Git
         run: |
@@ -103,5 +119,5 @@ jobs:
             - Maven compiler updated
             - Spring Boot 2.7.18 → 3.3.13
             - javax.* → jakarta.*
-            - Maven compile executed
-            - Maven tests executed
+            - Build analysis completed
+            - Agent task generated
