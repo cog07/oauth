@@ -1,5 +1,4 @@
 import json
-import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -19,7 +18,8 @@ analysis = {
     "javaVersion": None,
     "springBootVersion": None,
     "springCloudVersion": None,
-    "dependencies": []
+    "dependencies": [],
+    "migrationRecommendations": []
 }
 
 # Java Version
@@ -34,31 +34,78 @@ if spring_cloud is not None:
 
 # Spring Boot Parent Version
 parent = root.find(".//m:parent", namespace)
+
 if parent is not None:
     artifact = parent.find("m:artifactId", namespace)
     version = parent.find("m:version", namespace)
 
-    if artifact is not None and artifact.text == "spring-boot-starter-parent":
+    if (
+        artifact is not None
+        and artifact.text == "spring-boot-starter-parent"
+    ):
         analysis["springBootVersion"] = version.text
 
 # Dependencies
 dependencies = root.findall(".//m:dependency", namespace)
 
 for dep in dependencies:
+
     group_id = dep.find("m:groupId", namespace)
     artifact_id = dep.find("m:artifactId", namespace)
+    version = dep.find("m:version", namespace)
 
-    if group_id is not None and artifact_id is not None:
-        analysis["dependencies"].append(
+    if group_id is None or artifact_id is None:
+        continue
+
+    dependency = {
+        "groupId": group_id.text,
+        "artifactId": artifact_id.text
+    }
+
+    if version is not None:
+        dependency["version"] = version.text
+
+    analysis["dependencies"].append(dependency)
+
+    # Migration Rules
+
+    if (
+        artifact_id.text
+        == "spring-security-oauth2-authorization-server"
+    ):
+        analysis["migrationRecommendations"].append(
             {
-                "groupId": group_id.text,
-                "artifactId": artifact_id.text
+                "dependency":
+                    "spring-security-oauth2-authorization-server",
+                "issue":
+                    "Spring Boot 3 incompatible Authorization Server",
+                "recommendedVersion":
+                    "1.3.1",
+                "reason":
+                    "Boot 3 requires Jakarta Servlet APIs"
+            }
+        )
+
+    if (
+        artifact_id.text
+        == "spring-cloud-starter-netflix-eureka-client"
+    ):
+        analysis["migrationRecommendations"].append(
+            {
+                "dependency":
+                    "spring-cloud-starter-netflix-eureka-client",
+                "issue":
+                    "Verify Spring Cloud release train compatibility",
+                "recommendedVersion":
+                    "2023.x or later",
+                "reason":
+                    "Spring Boot 3 requires newer Spring Cloud versions"
             }
         )
 
 output_file = f"{OUTPUT_DIR}/pom-analysis.json"
 
-with open(output_file, "w") as f:
+with open(output_file, "w", encoding="utf-8") as f:
     json.dump(analysis, f, indent=2)
 
 print("Generated:", output_file)
