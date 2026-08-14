@@ -80,6 +80,17 @@ jobs:
         run: |
           mvn clean compile -DskipTests \
           > security-governance/outputs/build-errors.txt 2>&1
+      - name: Apply Migration Fixes
+        if: steps.build.outcome == 'failure'
+        run: |
+          python security-governance/scripts/apply_migration.py
+      - name: Maven Recompile
+        if: steps.build.outcome == 'failure'
+        id: rebuild
+        continue-on-error: true
+        run: |
+          mvn clean compile -DskipTests \
+          > security-governance/outputs/rebuild-errors.txt 2>&1
 
       - name: Run POM Analysis
         run: |
@@ -104,35 +115,47 @@ jobs:
           path: security-governance/outputs/
 
       - name: Maven Test
-        if: steps.build.outcome == 'success'
+        if: |
+          steps.build.outcome == 'success' ||
+          steps.rebuild.outcome == 'success'
         run: |
           mvn test
 
       - name: Configure Git
-        if: steps.build.outcome == 'success'
+        if: |
+          steps.build.outcome == 'success' ||
+          steps.rebuild.outcome == 'success'
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
       - name: Commit Changes
-        if: steps.build.outcome == 'success'
+        if: |
+          steps.build.outcome == 'success' ||
+          steps.rebuild.outcome == 'success'
         run: |
           git add .
           git commit -m "Migration: Java 17 and Spring Boot 3.3.13" || true
 
       - name: Push Branch
-        if: steps.build.outcome == 'success'
+        if: |
+          steps.build.outcome == 'success' ||
+          steps.rebuild.outcome == 'success'
         run: |
           git push origin HEAD
 
       - name: Migration Failed
-        if: steps.build.outcome == 'failure'
+        if: |
+          steps.build.outcome == 'failure' &&
+          steps.rebuild.outcome != 'success'
         run: |
           echo "Compilation failed."
           echo "Check build-errors.txt and agent-task.md in uploaded artifacts."
 
       - name: Create Pull Request
-        if: steps.build.outcome == 'success'
+        if: |
+          steps.build.outcome == 'success' ||
+          steps.rebuild.outcome == 'success'
         uses: peter-evans/create-pull-request@v7
         with:
           title: "[Migration] Java 17 and Spring Boot 3.3.13"
