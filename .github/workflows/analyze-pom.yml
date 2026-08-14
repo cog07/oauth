@@ -2,6 +2,10 @@ name: Analyze POM
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - master
+      - java17-migration
     inputs:
       branch_name:
         description: "Branch to analyze"
