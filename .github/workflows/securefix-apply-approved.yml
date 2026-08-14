@@ -3,7 +3,9 @@ name: SecureFix Apply Approved
 on:
   workflow_dispatch:
   push:
-    branches: [ master,securefix-poc ]
+    branches:
+      - master
+      - securefix-poc
 
 permissions:
   contents: write
@@ -53,9 +55,23 @@ jobs:
         run: |
           sed -i 's/<java.version>11<\/java.version>/<java.version>17<\/java.version>/g' pom.xml
 
-      - name: Verify Java upgrade
+      - name: Upgrade Maven Compiler Plugin to Java 17
         run: |
+          sed -i 's/<source>11<\/source>/<source>17<\/source>/g' pom.xml
+          sed -i 's/<target>11<\/target>/<target>17<\/target>/g' pom.xml
+
+      - name: Verify Migration Changes
+        run: |
+          echo "==== Java Version ===="
           grep -n "java.version" pom.xml
+
+          echo "==== Compiler Plugin ===="
+          grep -A 5 -B 2 "<artifactId>maven-compiler-plugin</artifactId>" pom.xml
+
+      - name: Verify Runtime
+        run: |
+          java -version
+          mvn -version
 
       - name: Maven Compile Validation
         run: |
@@ -84,6 +100,8 @@ jobs:
           {
             "status":"approved",
             "migration":"java11-to-java17",
+            "java_runtime":"17",
+            "compiler_target":"17",
             "build_status":"passed",
             "timestamp":"$(date)"
           }
