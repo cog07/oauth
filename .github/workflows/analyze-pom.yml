@@ -1,0 +1,30 @@
+name: Analyze POM
+on:
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Create Output Directory
+        run: |
+          mkdir -p security-governance/outputs
+
+      - name: Run POM Analysis
+        run: |
+          python security-governance/scripts/analyze_pom.py
+
+      - name: Upload Analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: pom-analysis
+          path: security-governance/outputs/
