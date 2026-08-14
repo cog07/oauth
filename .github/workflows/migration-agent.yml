@@ -1,0 +1,111 @@
+name: Migration Agent
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - java17-migration
+    inputs:
+      branch_name:
+        description: "Migration Branch"
+        required: true
+        default: "java17-migration"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch_name }}
+          fetch-depth: 0
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Show Migration Plan
+        run: |
+          cat security-governance/outputs/remediation-plan.json
+
+      - name: Upgrade Java Version
+        run: |
+          sed -i 's/<java.version>11<\/java.version>/<java.version>17<\/java.version>/g' pom.xml
+
+      - name: Upgrade Maven Compiler Plugin
+        run: |
+          sed -i 's/<source>11<\/source>/<source>17<\/source>/g' pom.xml || true
+          sed -i 's/<target>11<\/target>/<target>17<\/target>/g' pom.xml || true
+
+      - name: Upgrade Spring Boot Version
+        run: |
+          sed -i 's/<version>2.7.18<\/version>/<version>3.3.13<\/version>/g' pom.xml
+
+      - name: Migrate Jakarta Imports
+        run: |
+          find src/main/java -name "*.java" -type f \
+          -exec sed -i 's/import javax\.persistence/import jakarta.persistence/g' {} \;
+
+          find src/main/java -name "*.java" -type f \
+          -exec sed -i 's/import javax\.validation/import jakarta.validation/g' {} \;
+
+          find src/main/java -name "*.java" -type f \
+          -exec sed -i 's/import javax\.servlet/import jakarta.servlet/g' {} \;
+
+      - name: Verify Changes
+        run: |
+          grep -n "java.version" pom.xml || true
+          grep -n "spring-boot-starter-parent" -A 5 pom.xml || true
+
+      - name: Maven Compile
+        run: |
+          mvn clean compile -DskipTests
+
+      - name: Maven Test
+        run: |
+          mvn test
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+      - name: Commit Changes
+        run: |
+          git add .
+
+          git commit -m "Migration: Java 17 and Spring Boot 3.3.13" || true
+
+      - name: Push Branch
+        run: |
+          git push origin HEAD
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: ${{ inputs.branch_name }}
+          title: "[Migration] Java 17 and Spring Boot 3.3.13"
+          body: |
+            Automated migration performed:
+
+            - Java 11 → 17
+            - Maven compiler updated
+            - Spring Boot 2.7.18 → 3.3.13
+            - javax.* → jakarta.*
+            - Maven compile executed
+            - Maven tests executed
