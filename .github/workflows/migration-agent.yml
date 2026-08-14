@@ -39,10 +39,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Show Migration Plan
-        run: |
-          cat security-governance/outputs/remediation-plan.json
-
       - name: Upgrade Java Version
         run: |
           sed -i 's/<java.version>11<\/java.version>/<java.version>17<\/java.version>/g' pom.xml
