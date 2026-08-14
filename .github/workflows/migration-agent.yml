@@ -78,6 +78,18 @@ jobs:
           mvn clean compile -DskipTests \
           > security-governance/outputs/build-errors.txt 2>&1 || true
 
+      - name: Run POM Analysis
+        run: |
+          python security-governance/scripts/analyze_pom.py
+
+      - name: Run Source Analysis
+        run: |
+          python security-governance/scripts/analyze_source.py
+
+      - name: Generate Migration Plan
+        run: |
+          python security-governance/scripts/generate_plan.py
+
       - name: Generate Agent Task
         run: |
           python security-governance/scripts/generate_agent_task.py
@@ -87,6 +99,7 @@ jobs:
         with:
           name: migration-agent-analysis
           path: security-governance/outputs/
+
 
       - name: Maven Test
         run: |
