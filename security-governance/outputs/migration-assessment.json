@@ -1,0 +1,6 @@
+{
+  "status": "ready-for-approval",
+  "migrationType": "java17-springboot3",
+  "riskLevel": "medium",
+  "jakartaMigrationRequired": false
+}

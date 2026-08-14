@@ -1,0 +1,8 @@
+{
+  "currentJavaVersion": "17",
+  "targetJavaVersion": "17",
+  "currentSpringBootVersion": "3.3.13",
+  "targetSpringBootVersion": "3.3.13",
+  "jakartaMigrationRequired": false,
+  "findings": []
+}
