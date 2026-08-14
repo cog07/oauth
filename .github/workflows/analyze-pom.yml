@@ -37,6 +37,9 @@ jobs:
       - name: Run Source Analysis
         run: |
           python security-governance/scripts/analyze_source.py
+      - name: Generate Migration Plan
+        run: |
+          python security-governance/scripts/generate_plan.py
 
       - name: Upload Analysis
         uses: actions/upload-artifact@v4
