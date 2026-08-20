@@ -3,17 +3,24 @@ name: Build
 on:
   push:
     branches:
-      - master
+      - main
+      - java17-migration
+      - securefix-poc
+
   pull_request:
     branches:
-      - master
+      - main
+      - java17-migration
+      - securefix-poc
+
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Source Code
+      - name: Checkout selected branch
         uses: actions/checkout@v4
 
       - name: Set up Java 11
@@ -22,7 +29,6 @@ jobs:
           distribution: temurin
           java-version: '11'
 
-      # For Maven Projects
       - name: Build with Maven
         run: mvn clean package
 
